@@ -3,6 +3,7 @@ from tkinter import messagebox
 from datetime import datetime
 
 from app.data.repository import crear_registro
+from app.ui.widgets.calendario_selector import seleccionar_fecha, FESTIVOS
 
 
 def abrir_formulario_registro(parent):
@@ -14,8 +15,6 @@ def abrir_formulario_registro(parent):
     ventana.geometry("480x520")
     ventana.resizable(False, False)
     ventana.grab_set()
-
-    # colores / widgets / frames …
 
     ventana.update_idletasks()       # ② calcular tamaño
     ancho = 480
@@ -29,16 +28,6 @@ def abrir_formulario_registro(parent):
     COLOR_VERDE = "#1f7a4d"
     COLOR_FONDO = "#f2f2f2"
     ventana.configure(bg=COLOR_FONDO)
-
-    # ================================
-    # CENTRAR VENTANA EN PANTALLA
-    # ================================
-    ventana.update_idletasks()
-    ancho = 480
-    alto = 520
-    x = (ventana.winfo_screenwidth() // 2) - (ancho // 2)
-    y = (ventana.winfo_screenheight() // 2) - (alto // 2)
-    ventana.geometry(f"{ancho}x{alto}+{x}+{y}")
 
     # ================================
     # HEADER
@@ -74,7 +63,6 @@ def abrir_formulario_registro(parent):
         if v != up:
             var.set(up)
 
-    # Cuando cambie el texto, lo convertimos a mayúsculas
     var_nombre.trace_add("write", lambda *args: _forzar_mayusculas(var_nombre))
     var_placa.trace_add("write", lambda *args: _forzar_mayusculas(var_placa))
 
@@ -88,19 +76,36 @@ def abrir_formulario_registro(parent):
         ).grid(row=fila, column=0, sticky="w", pady=6)
 
         entry = tk.Entry(form_frame, width=30, textvariable=textvariable)
-        entry.grid(row=fila, column=1, pady=6)
+        entry.grid(row=fila, column=1, pady=6, sticky="w")
         entries.append(entry)
         return entry
 
+    # ============================================================
+    # CAMPOS
+    # ============================================================
     entry_cedula = campo("Cédula", 0)
-    entry_nombre = campo("Nombre", 1, textvariable=var_nombre)  # ✅ ahora fuerza mayúsculas
-    entry_placa = campo("Placa", 2, textvariable=var_placa)     # ✅ ahora fuerza mayúsculas
+    entry_nombre = campo("Nombre", 1, textvariable=var_nombre)  # ✅ mayúsculas
+    entry_placa  = campo("Placa", 2, textvariable=var_placa)    # ✅ mayúsculas
+
+    # ============================================================
+    # ✅ FECHA (FILA 3) + BOTÓN CALENDARIO
+    # ============================================================
     entry_fecha = campo("Fecha (YYYY-MM-DD)", 3)
-    entry_km = campo("Kilómetros", 4)
+
+    btn_cal = tk.Button(
+        form_frame,
+        text="📅",
+        width=3,
+        command=lambda: seleccionar_fecha(ventana, entry_fecha)
+    )
+    btn_cal.grid(row=3, column=2, padx=(6, 0), pady=6, sticky="w")
+
+    # Si quieres que por defecto salga HOY, descomenta esta línea:
+    # entry_fecha.insert(0, datetime.now().strftime("%Y-%m-%d"))
+
+    entry_km    = campo("Kilómetros", 4)
     entry_horas = campo("Horas trabajadas", 5)
     entry_valor = campo("Valor hora extra", 6)
-
-    entry_fecha.insert(0, datetime.now().strftime("%Y-%m-%d"))
 
     # ================================
     # NAVEGACIÓN CON ENTER
@@ -120,7 +125,10 @@ def abrir_formulario_registro(parent):
     def limpiar_campos():
         for e in entries:
             e.delete(0, tk.END)
-        entry_fecha.insert(0, datetime.now().strftime("%Y-%m-%d"))
+
+        # Si quieres que al limpiar vuelva a quedar HOY:
+        # entry_fecha.insert(0, datetime.now().strftime("%Y-%m-%d"))
+
         entry_cedula.focus_set()
 
     # ================================
@@ -134,17 +142,19 @@ def abrir_formulario_registro(parent):
                 raise ValueError("El nombre es obligatorio.")
             if not entry_placa.get().strip():
                 raise ValueError("La placa es obligatoria.")
+            if not entry_fecha.get().strip():
+                raise ValueError("La fecha es obligatoria.")
 
-            datetime.strptime(entry_fecha.get(), "%Y-%m-%d")
+            datetime.strptime(entry_fecha.get().strip(), "%Y-%m-%d")
 
             data = {
                 "cedula": entry_cedula.get().strip(),
-                "nombre": entry_nombre.get().strip().upper(),  # se mantiene
-                "placa": entry_placa.get().strip().upper(),    # se mantiene
+                "nombre": entry_nombre.get().strip().upper(),
+                "placa": entry_placa.get().strip().upper(),
                 "fecha": entry_fecha.get().strip(),
-                "kilometro": float(entry_km.get()) if entry_km.get() else None,
-                "horas_trabajadas": float(entry_horas.get()) if entry_horas.get() else None,
-                "valor_hora_extra": float(entry_valor.get()) if entry_valor.get() else None,
+                "kilometro": float(entry_km.get()) if entry_km.get().strip() else None,
+                "horas_trabajadas": float(entry_horas.get()) if entry_horas.get().strip() else None,
+                "valor_hora_extra": float(entry_valor.get()) if entry_valor.get().strip() else None,
             }
 
             crear_registro(data)
@@ -165,7 +175,7 @@ def abrir_formulario_registro(parent):
     # ================================
     def cerrar():
         ventana.destroy()
-        parent.deiconify()  # 👈 vuelve a mostrar la principal
+        parent.deiconify()
 
     ventana.protocol("WM_DELETE_WINDOW", cerrar)
 
