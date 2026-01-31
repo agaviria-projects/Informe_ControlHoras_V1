@@ -1,0 +1,267 @@
+import tkinter as tk
+from tkinter import ttk, messagebox
+from datetime import datetime
+
+from app.data.repository import buscar_registros, actualizar_registro
+
+
+def abrir_buscar_editar(parent):
+    # Ventana modal
+    ventana = tk.Toplevel(parent)
+    ventana.transient(parent)
+    ventana.grab_set()
+    ventana.title("Buscar / Editar registros - Control de Horas")
+    ventana.geometry("980x520")
+    ventana.resizable(True, True)
+
+    COLOR_VERDE = "#1f7a4d"
+    COLOR_FONDO = "#f2f2f2"
+
+    ventana.configure(bg=COLOR_FONDO)
+
+    # ================================
+    # HEADER
+    # ================================
+    header = tk.Frame(ventana, bg=COLOR_VERDE, height=45)
+    header.pack(fill="x")
+
+    tk.Label(
+        header,
+        text="BUSCAR / EDITAR REGISTROS",
+        bg=COLOR_VERDE,
+        fg="white",
+        font=("Segoe UI", 11, "bold")
+    ).pack(padx=20, pady=10)
+
+    # ================================
+    # FILTROS
+    # ================================
+    filtros = tk.Frame(ventana, bg=COLOR_FONDO)
+    filtros.pack(fill="x", padx=14, pady=(12, 6))
+
+    tk.Label(filtros, text="Cédula:", bg=COLOR_FONDO, font=("Segoe UI", 9, "bold")).grid(row=0, column=0, sticky="w")
+    entry_cedula = tk.Entry(filtros, width=18)
+    entry_cedula.grid(row=0, column=1, padx=(6, 14), pady=4)
+
+    tk.Label(filtros, text="Nombre:", bg=COLOR_FONDO, font=("Segoe UI", 9, "bold")).grid(row=0, column=2, sticky="w")
+    entry_nombre = tk.Entry(filtros, width=22)
+    entry_nombre.grid(row=0, column=3, padx=(6, 14), pady=4)
+
+    tk.Label(filtros, text="Placa:", bg=COLOR_FONDO, font=("Segoe UI", 9, "bold")).grid(row=0, column=4, sticky="w")
+    entry_placa = tk.Entry(filtros, width=12)
+    entry_placa.grid(row=0, column=5, padx=(6, 14), pady=4)
+
+    lbl_total = tk.Label(filtros, text="Total: 0", bg=COLOR_FONDO, fg="#0d3b2e", font=("Segoe UI", 9, "bold"))
+    lbl_total.grid(row=0, column=6, sticky="e", padx=(10, 0))
+
+    filtros.grid_columnconfigure(6, weight=1)
+
+    # ================================
+    # GRID (TREEVIEW)
+    # ================================
+    grid_frame = tk.Frame(ventana, bg=COLOR_FONDO)
+    grid_frame.pack(fill="both", expand=True, padx=14, pady=10)
+
+    columnas = (
+        "id", "cedula", "nombre", "placa", "fecha",
+        "kilometro", "horas_trabajadas", "valor_hora_extra", "created_at"
+    )
+
+    tree = ttk.Treeview(grid_frame, columns=columnas, show="headings", height=14)
+    tree.pack(side="left", fill="both", expand=True)
+
+    vsb = ttk.Scrollbar(grid_frame, orient="vertical", command=tree.yview)
+    vsb.pack(side="right", fill="y")
+    tree.configure(yscrollcommand=vsb.set)
+
+    # Encabezados
+    tree.heading("id", text="ID")
+    tree.heading("cedula", text="Cédula")
+    tree.heading("nombre", text="Nombre")
+    tree.heading("placa", text="Placa")
+    tree.heading("fecha", text="Fecha")
+    tree.heading("kilometro", text="KM")
+    tree.heading("horas_trabajadas", text="Horas")
+    tree.heading("valor_hora_extra", text="Valor H.E.")
+    tree.heading("created_at", text="Creado")
+
+    # Tamaños
+    tree.column("id", width=55, anchor="center")
+    tree.column("cedula", width=110, anchor="w")
+    tree.column("nombre", width=220, anchor="w")
+    tree.column("placa", width=80, anchor="center")
+    tree.column("fecha", width=110, anchor="center")
+    tree.column("kilometro", width=80, anchor="e")
+    tree.column("horas_trabajadas", width=90, anchor="e")
+    tree.column("valor_hora_extra", width=110, anchor="e")
+    tree.column("created_at", width=170, anchor="center")
+
+    def limpiar_tree():
+        for item in tree.get_children():
+            tree.delete(item)
+
+    def cargar_datos():
+        limpiar_tree()
+
+        cedula = entry_cedula.get().strip() or None
+        nombre = entry_nombre.get().strip() or None
+        placa = entry_placa.get().strip() or None
+
+        # repository.buscar_registros debe devolver filas tipo:
+        # [(id, cedula, nombre, placa, fecha, kilometro, horas_trabajadas, valor_hora_extra, created_at, ...), ...]
+        rows = buscar_registros(cedula=cedula, nombre=nombre, placa=placa)
+
+        # Intento robusto: si el repo devuelve más columnas, tomamos las primeras 9 necesarias
+        count = 0
+        for r in rows:
+            r = list(r)
+            base = r[:9]  # id..created_at (9 columnas)
+            # Formateo ligero
+            tree.insert("", "end", values=base)
+            count += 1
+
+        lbl_total.config(text=f"Total: {count}")
+
+    def limpiar_filtros():
+        entry_cedula.delete(0, tk.END)
+        entry_nombre.delete(0, tk.END)
+        entry_placa.delete(0, tk.END)
+        cargar_datos()
+
+    # ================================
+    # EDITAR REGISTRO (DOBLE CLICK)
+    # ================================
+    def abrir_editor_desde_fila():
+        sel = tree.selection()
+        if not sel:
+            messagebox.showwarning("Atención", "Selecciona un registro para editar.", parent=ventana)
+            return
+
+        vals = tree.item(sel[0], "values")
+        # Mapeo según columnas
+        id_registro = int(vals[0])
+
+        # Ventana de edición (modal)
+        edit = tk.Toplevel(ventana)
+        edit.transient(ventana)
+        edit.grab_set()
+        edit.title(f"Editar registro ID {id_registro}")
+        edit.geometry("480x420")
+        edit.resizable(False, False)
+        edit.configure(bg=COLOR_FONDO)
+
+        head2 = tk.Frame(edit, bg=COLOR_VERDE, height=45)
+        head2.pack(fill="x")
+        tk.Label(head2, text="EDITAR REGISTRO", bg=COLOR_VERDE, fg="white",
+                 font=("Segoe UI", 11, "bold")).pack(pady=10)
+
+        frm = tk.Frame(edit, bg=COLOR_FONDO)
+        frm.pack(padx=24, pady=18, fill="x")
+
+        def fila(label, valor, i):
+            tk.Label(frm, text=label, bg=COLOR_FONDO, font=("Segoe UI", 9, "bold")).grid(row=i, column=0, sticky="w", pady=6)
+            e = tk.Entry(frm, width=30)
+            e.grid(row=i, column=1, pady=6)
+            if valor is not None:
+                e.insert(0, str(valor))
+            return e
+
+        e_ced = fila("Cédula", vals[1], 0)
+        e_nom = fila("Nombre", vals[2], 1)
+        e_pla = fila("Placa", vals[3], 2)
+        e_fec = fila("Fecha (YYYY-MM-DD)", vals[4], 3)
+        e_km  = fila("Kilómetros", vals[5], 4)
+        e_hor = fila("Horas trabajadas", vals[6], 5)
+        e_val = fila("Valor hora extra", vals[7], 6)
+
+        # Enter avanza
+        entries = [e_ced, e_nom, e_pla, e_fec, e_km, e_hor, e_val]
+
+        def focus_sig(event, idx):
+            try:
+                entries[idx + 1].focus_set()
+            except IndexError:
+                btn_save.focus_set()
+
+        for i, ent in enumerate(entries):
+            ent.bind("<Return>", lambda ev, idx=i: focus_sig(ev, idx))
+
+        def guardar_cambios():
+            try:
+                if not e_ced.get().strip():
+                    raise ValueError("La cédula es obligatoria.")
+                if not e_nom.get().strip():
+                    raise ValueError("El nombre es obligatorio.")
+                if not e_pla.get().strip():
+                    raise ValueError("La placa es obligatoria.")
+
+                datetime.strptime(e_fec.get().strip(), "%Y-%m-%d")
+
+                data = {
+                    "cedula": e_ced.get().strip(),
+                    "nombre": e_nom.get().strip().upper(),
+                    "placa": e_pla.get().strip().upper(),
+                    "fecha": e_fec.get().strip(),
+                    "kilometro": float(e_km.get()) if e_km.get().strip() else None,
+                    "horas_trabajadas": float(e_hor.get()) if e_hor.get().strip() else None,
+                    "valor_hora_extra": float(e_val.get()) if e_val.get().strip() else None,
+                }
+
+                actualizar_registro(id_registro, data)
+                messagebox.showinfo("Éxito", "Registro actualizado correctamente.", parent=edit)
+                edit.destroy()
+                cargar_datos()
+
+            except ValueError as ex:
+                messagebox.showerror("Error de validación", str(ex), parent=edit)
+            except Exception as ex:
+                messagebox.showerror("Error", f"Ocurrió un error:\n{ex}", parent=edit)
+
+        btns2 = tk.Frame(edit, bg=COLOR_FONDO)
+        btns2.pack(pady=12)
+
+        btn_save = tk.Button(btns2, text="Guardar cambios", width=16, bg=COLOR_VERDE, fg="white",
+                             font=("Segoe UI", 10, "bold"), command=guardar_cambios)
+        btn_save.pack(side="left", padx=10)
+        btn_save.bind("<Return>", lambda e: guardar_cambios())
+
+        tk.Button(btns2, text="Cerrar", width=12, bg="#888888", fg="white",
+                  font=("Segoe UI", 10), command=edit.destroy).pack(side="left", padx=10)
+
+        e_ced.focus_set()
+
+    tree.bind("<Double-1>", lambda e: abrir_editor_desde_fila())
+
+    # ================================
+    # BOTONES ABAJO
+    # ================================
+    acciones = tk.Frame(ventana, bg=COLOR_FONDO)
+    acciones.pack(fill="x", padx=14, pady=(0, 14))
+
+    tk.Button(
+        acciones, text="Buscar", width=12, bg=COLOR_VERDE, fg="white",
+        font=("Segoe UI", 10, "bold"), command=cargar_datos
+    ).pack(side="left", padx=(0, 10))
+
+    tk.Button(
+        acciones, text="Limpiar", width=12, bg="#888888", fg="white",
+        font=("Segoe UI", 10), command=limpiar_filtros
+    ).pack(side="left", padx=(0, 10))
+
+    tk.Button(
+        acciones, text="Editar seleccionado", width=16, bg="#0d3b2e", fg="white",
+        font=("Segoe UI", 10, "bold"), command=abrir_editor_desde_fila
+    ).pack(side="left", padx=(0, 10))
+
+    tk.Button(
+        acciones, text="Cerrar", width=12, bg="#8b2c1f", fg="white",
+        font=("Segoe UI", 10, "bold"), command=ventana.destroy
+    ).pack(side="right")
+
+    # Enter en filtros dispara buscar
+    entry_cedula.bind("<Return>", lambda e: cargar_datos())
+    entry_nombre.bind("<Return>", lambda e: cargar_datos())
+    entry_placa.bind("<Return>", lambda e: cargar_datos())
+
+    # Carga inicial
+    cargar_datos()

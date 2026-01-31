@@ -4,6 +4,9 @@ from pathlib import Path
 from PIL import Image, ImageTk
 from datetime import datetime
 from app.ui.formulario_registro import abrir_formulario_registro
+from app.ui.buscar_editar import abrir_buscar_editar
+from app.ui.exportar_excel import exportar_a_excel
+
 
 
 def iniciar_app():
@@ -146,14 +149,14 @@ def iniciar_app():
 
     crear_boton(
         "Buscar / Editar registros",
-        lambda: info("Grid de búsqueda (Paso 11)"),
+        lambda: abrir_buscar_editar(root),
         COLOR_BOTON,
         "#249d63"
     ).pack(pady=6)
 
     crear_boton(
         "Exportar a Excel",
-        lambda: info("Exportación Excel (Paso 12)"),
+         lambda: exportar_a_excel(root),
         COLOR_BOTON,
         "#249d63"
     ).pack(pady=6)
