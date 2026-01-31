@@ -2,42 +2,34 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import datetime
 
-from app.data.repository import buscar_registros, actualizar_registro
+from app.data.repository import buscar_registros, actualizar_registro, eliminar_registro
 
 
 def abrir_buscar_editar(parent):
-    # Oculta principal (igual que en formulario_registro)
     parent.withdraw()
 
-    # Ventana modal
     ventana = tk.Toplevel(parent)
-    ventana.withdraw()  # ① ocultar mientras se configura (evita parpadeo)
+    ventana.withdraw()
     ventana.title("Buscar / Editar registros - Control de Horas")
     ventana.geometry("1300x550")
     ventana.resizable(True, True)
-    ventana.grab_set()  # modal real
+    ventana.grab_set()
 
     COLOR_VERDE = "#1f7a4d"
     COLOR_FONDO = "#f2f2f2"
     ventana.configure(bg=COLOR_FONDO)
 
-    # ================================
-    # CENTRAR VENTANA EN PANTALLA
-    # ================================
-    ventana.update_idletasks()  # ② calcular tamaño
+    ventana.update_idletasks()
     ancho = 1300
     alto = 550
     x = (ventana.winfo_screenwidth() // 2) - (ancho // 2)
     y = (ventana.winfo_screenheight() // 2) - (alto // 2)
     ventana.geometry(f"{ancho}x{alto}+{x}+{y}")
 
-    ventana.deiconify()  # ③ mostrar SIN parpadeo
+    ventana.deiconify()
     ventana.lift()
     ventana.focus_force()
 
-    # ================================
-    # CIERRE CONTROLADO
-    # ================================
     def _cerrar_y_restaurar_parent():
         try:
             try:
@@ -55,9 +47,6 @@ def abrir_buscar_editar(parent):
 
     ventana.protocol("WM_DELETE_WINDOW", _cerrar_y_restaurar_parent)
 
-    # ================================
-    # HEADER
-    # ================================
     header = tk.Frame(ventana, bg=COLOR_VERDE, height=45)
     header.pack(fill="x")
 
@@ -69,9 +58,6 @@ def abrir_buscar_editar(parent):
         font=("Segoe UI", 11, "bold")
     ).pack(padx=20, pady=10)
 
-    # ================================
-    # FILTROS
-    # ================================
     filtros = tk.Frame(ventana, bg=COLOR_FONDO)
     filtros.pack(fill="x", padx=14, pady=(12, 6))
 
@@ -89,12 +75,8 @@ def abrir_buscar_editar(parent):
 
     lbl_total = tk.Label(filtros, text="Total: 0", bg=COLOR_FONDO, fg="#0d3b2e", font=("Segoe UI", 9, "bold"))
     lbl_total.grid(row=0, column=6, sticky="e", padx=(10, 0))
-
     filtros.grid_columnconfigure(6, weight=1)
 
-    # ================================
-    # GRID (TREEVIEW)
-    # ================================
     grid_frame = tk.Frame(ventana, bg=COLOR_FONDO)
     grid_frame.pack(fill="both", expand=True, padx=14, pady=10)
 
@@ -110,7 +92,6 @@ def abrir_buscar_editar(parent):
     vsb.pack(side="right", fill="y")
     tree.configure(yscrollcommand=vsb.set)
 
-    # Encabezados
     tree.heading("id", text="ID")
     tree.heading("cedula", text="Cédula")
     tree.heading("nombre", text="Nombre")
@@ -121,7 +102,6 @@ def abrir_buscar_editar(parent):
     tree.heading("valor_hora_extra", text="Valor H.E.")
     tree.heading("created_at", text="Creado")
 
-    # Tamaños
     tree.column("id", width=55, anchor="center")
     tree.column("cedula", width=110, anchor="w")
     tree.column("nombre", width=220, anchor="w")
@@ -148,7 +128,7 @@ def abrir_buscar_editar(parent):
         count = 0
         for r in rows:
             r = list(r)
-            base = r[:9]  # id..created_at
+            base = r[:9]
             tree.insert("", "end", values=base)
             count += 1
 
@@ -160,9 +140,30 @@ def abrir_buscar_editar(parent):
         entry_placa.delete(0, tk.END)
         cargar_datos()
 
-    # ================================
-    # EDITAR REGISTRO (DOBLE CLICK)
-    # ================================
+    def eliminar_desde_fila():
+        sel = tree.selection()
+        if not sel:
+            messagebox.showwarning("Atención", "Selecciona un registro para eliminar.", parent=ventana)
+            return
+
+        vals = tree.item(sel[0], "values")
+        id_registro = int(vals[0])
+
+        ok = messagebox.askyesno(
+            "Confirmar eliminación",
+            f"¿Seguro que deseas eliminar el registro ID {id_registro}?\n\nEsta acción no se puede deshacer.",
+            parent=ventana
+        )
+        if not ok:
+            return
+
+        try:
+            eliminar_registro(id_registro)
+            messagebox.showinfo("Éxito", f"Registro ID {id_registro} eliminado.", parent=ventana)
+            cargar_datos()
+        except Exception as ex:
+            messagebox.showerror("Error", f"No se pudo eliminar:\n{ex}", parent=ventana)
+
     def abrir_editor_desde_fila():
         sel = tree.selection()
         if not sel:
@@ -260,10 +261,8 @@ def abrir_buscar_editar(parent):
         e_ced.focus_set()
 
     tree.bind("<Double-1>", lambda e: abrir_editor_desde_fila())
+    tree.bind("<Delete>", lambda e: eliminar_desde_fila())
 
-    # ================================
-    # BOTONES ABAJO
-    # ================================
     acciones = tk.Frame(ventana, bg=COLOR_FONDO)
     acciones.pack(fill="x", padx=14, pady=(0, 14))
 
@@ -283,16 +282,19 @@ def abrir_buscar_editar(parent):
     ).pack(side="left", padx=(0, 10))
 
     tk.Button(
+        acciones, text="Eliminar seleccionado", width=18, bg="#b03a2e", fg="white",
+        font=("Segoe UI", 10, "bold"), command=eliminar_desde_fila
+    ).pack(side="left", padx=(0, 10))
+
+    tk.Button(
         acciones, text="Cerrar", width=12, bg="#8b2c1f", fg="white",
         font=("Segoe UI", 10, "bold"), command=_cerrar_y_restaurar_parent
     ).pack(side="right")
 
-    # Enter en filtros dispara buscar
     entry_cedula.bind("<Return>", lambda e: cargar_datos())
     entry_nombre.bind("<Return>", lambda e: cargar_datos())
     entry_placa.bind("<Return>", lambda e: cargar_datos())
 
-    # Carga inicial (protegida)
     try:
         cargar_datos()
     except Exception as ex:
