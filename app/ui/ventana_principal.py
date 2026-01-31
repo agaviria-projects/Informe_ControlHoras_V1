@@ -8,9 +8,10 @@ from app.ui.buscar_editar import abrir_buscar_editar
 from app.ui.exportar_excel import exportar_a_excel
 
 
-
 def iniciar_app():
     root = tk.Tk()
+    root.withdraw()  # 👈 NUEVO: ocultar mientras se configura (evita que “se mueva” al abrir)
+
     root.title("Control de Horas - V1")
     root.geometry("520x520")
     root.resizable(False, False)
@@ -26,6 +27,20 @@ def iniciar_app():
     COLOR_FONDO = "#f2f2f2"
 
     root.configure(bg=COLOR_FONDO)
+
+    # ================================
+    # NUEVO: CENTRAR VENTANA PRINCIPAL (FIJA AL INICIO)
+    # ================================
+    root.update_idletasks()
+    ancho = 520
+    alto = 520
+    x = (root.winfo_screenwidth() // 2) - (ancho // 2)
+    y = (root.winfo_screenheight() // 2) - (alto // 2)
+    root.geometry(f"{ancho}x{alto}+{x}+{y}")
+
+    root.deiconify()    # 👈 mostrar ya centrada
+    root.lift()
+    root.focus_force()
 
     # ================================
     # HEADER SUPERIOR
@@ -108,27 +123,15 @@ def iniciar_app():
             command=comando
         )
 
-        # Hover (entra)
         def on_enter(e):
-            btn.config(
-                bg=color_hover,
-                relief="raised",
-                bd=3
-            )
+            btn.config(bg=color_hover, relief="raised", bd=3)
 
-        # Hover (sale)
         def on_leave(e):
-            btn.config(
-                bg=color_base,
-                relief="raised",
-                bd=2
-            )
+            btn.config(bg=color_base, relief="raised", bd=2)
 
-        # Click presionado
         def on_press(e):
             btn.config(relief="sunken", bd=2)
 
-        # Click soltado
         def on_release(e):
             btn.config(relief="raised", bd=3)
 
@@ -146,7 +149,6 @@ def iniciar_app():
         COLOR_BOTON_HOVER
     ).pack(pady=6)
 
-
     crear_boton(
         "Buscar / Editar registros",
         lambda: abrir_buscar_editar(root),
@@ -156,7 +158,7 @@ def iniciar_app():
 
     crear_boton(
         "Exportar a Excel",
-         lambda: exportar_a_excel(root),
+        lambda: exportar_a_excel(root),
         COLOR_BOTON,
         "#249d63"
     ).pack(pady=6)

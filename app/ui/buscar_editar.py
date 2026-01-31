@@ -6,18 +6,54 @@ from app.data.repository import buscar_registros, actualizar_registro
 
 
 def abrir_buscar_editar(parent):
+    # Oculta principal (igual que en formulario_registro)
+    parent.withdraw()
+
     # Ventana modal
     ventana = tk.Toplevel(parent)
-    ventana.transient(parent)
-    ventana.grab_set()
+    ventana.withdraw()  # ① ocultar mientras se configura (evita parpadeo)
     ventana.title("Buscar / Editar registros - Control de Horas")
-    ventana.geometry("980x520")
+    ventana.geometry("1300x550")
     ventana.resizable(True, True)
+    ventana.grab_set()  # modal real
 
     COLOR_VERDE = "#1f7a4d"
     COLOR_FONDO = "#f2f2f2"
-
     ventana.configure(bg=COLOR_FONDO)
+
+    # ================================
+    # CENTRAR VENTANA EN PANTALLA
+    # ================================
+    ventana.update_idletasks()  # ② calcular tamaño
+    ancho = 1300
+    alto = 550
+    x = (ventana.winfo_screenwidth() // 2) - (ancho // 2)
+    y = (ventana.winfo_screenheight() // 2) - (alto // 2)
+    ventana.geometry(f"{ancho}x{alto}+{x}+{y}")
+
+    ventana.deiconify()  # ③ mostrar SIN parpadeo
+    ventana.lift()
+    ventana.focus_force()
+
+    # ================================
+    # CIERRE CONTROLADO
+    # ================================
+    def _cerrar_y_restaurar_parent():
+        try:
+            try:
+                ventana.grab_release()
+            except Exception:
+                pass
+            ventana.destroy()
+        finally:
+            try:
+                parent.deiconify()
+                parent.lift()
+                parent.focus_force()
+            except Exception:
+                pass
+
+    ventana.protocol("WM_DELETE_WINDOW", _cerrar_y_restaurar_parent)
 
     # ================================
     # HEADER
@@ -94,7 +130,7 @@ def abrir_buscar_editar(parent):
     tree.column("kilometro", width=80, anchor="e")
     tree.column("horas_trabajadas", width=90, anchor="e")
     tree.column("valor_hora_extra", width=110, anchor="e")
-    tree.column("created_at", width=170, anchor="center")
+    tree.column("created_at", width=200, anchor="center")
 
     def limpiar_tree():
         for item in tree.get_children():
@@ -107,16 +143,12 @@ def abrir_buscar_editar(parent):
         nombre = entry_nombre.get().strip() or None
         placa = entry_placa.get().strip() or None
 
-        # repository.buscar_registros debe devolver filas tipo:
-        # [(id, cedula, nombre, placa, fecha, kilometro, horas_trabajadas, valor_hora_extra, created_at, ...), ...]
         rows = buscar_registros(cedula=cedula, nombre=nombre, placa=placa)
 
-        # Intento robusto: si el repo devuelve más columnas, tomamos las primeras 9 necesarias
         count = 0
         for r in rows:
             r = list(r)
-            base = r[:9]  # id..created_at (9 columnas)
-            # Formateo ligero
+            base = r[:9]  # id..created_at
             tree.insert("", "end", values=base)
             count += 1
 
@@ -138,10 +170,8 @@ def abrir_buscar_editar(parent):
             return
 
         vals = tree.item(sel[0], "values")
-        # Mapeo según columnas
         id_registro = int(vals[0])
 
-        # Ventana de edición (modal)
         edit = tk.Toplevel(ventana)
         edit.transient(ventana)
         edit.grab_set()
@@ -174,7 +204,6 @@ def abrir_buscar_editar(parent):
         e_hor = fila("Horas trabajadas", vals[6], 5)
         e_val = fila("Valor hora extra", vals[7], 6)
 
-        # Enter avanza
         entries = [e_ced, e_nom, e_pla, e_fec, e_km, e_hor, e_val]
 
         def focus_sig(event, idx):
@@ -255,7 +284,7 @@ def abrir_buscar_editar(parent):
 
     tk.Button(
         acciones, text="Cerrar", width=12, bg="#8b2c1f", fg="white",
-        font=("Segoe UI", 10, "bold"), command=ventana.destroy
+        font=("Segoe UI", 10, "bold"), command=_cerrar_y_restaurar_parent
     ).pack(side="right")
 
     # Enter en filtros dispara buscar
@@ -263,5 +292,13 @@ def abrir_buscar_editar(parent):
     entry_nombre.bind("<Return>", lambda e: cargar_datos())
     entry_placa.bind("<Return>", lambda e: cargar_datos())
 
-    # Carga inicial
-    cargar_datos()
+    # Carga inicial (protegida)
+    try:
+        cargar_datos()
+    except Exception as ex:
+        messagebox.showerror(
+            "Error al cargar registros",
+            f"No se pudo cargar la información inicial.\n\nDetalle:\n{ex}",
+            parent=ventana
+        )
+        _cerrar_y_restaurar_parent()
