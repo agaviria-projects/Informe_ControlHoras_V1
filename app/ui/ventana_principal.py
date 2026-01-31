@@ -10,7 +10,7 @@ from app.ui.exportar_excel import exportar_a_excel
 
 def iniciar_app():
     root = tk.Tk()
-    root.withdraw()  # 👈 NUEVO: ocultar mientras se configura (evita que “se mueva” al abrir)
+    root.withdraw()  # ✅ ocultar mientras se configura (evita “salto”)
 
     root.title("Control de Horas - V1")
     root.geometry("520x520")
@@ -29,7 +29,22 @@ def iniciar_app():
     root.configure(bg=COLOR_FONDO)
 
     # ================================
-    # NUEVO: CENTRAR VENTANA PRINCIPAL (FIJA AL INICIO)
+    # ICONO (NO revienta si falta)
+    # ================================
+    base_dir = Path(__file__).resolve().parents[2]
+    logo_path = base_dir / "assets" / "logo.png"
+
+    try:
+        # iconphoto acepta PhotoImage (tk). Usamos PIL para compatibilidad con png.
+        icon_img = Image.open(logo_path).resize((64, 64))
+        icon_tk = ImageTk.PhotoImage(icon_img)
+        root.iconphoto(True, icon_tk)
+        root._icon_ref = icon_tk  # mantener referencia
+    except Exception:
+        pass
+
+    # ================================
+    # CENTRAR VENTANA PRINCIPAL (FIJA AL INICIO)
     # ================================
     root.update_idletasks()
     ancho = 520
@@ -38,9 +53,21 @@ def iniciar_app():
     y = (root.winfo_screenheight() // 2) - (alto // 2)
     root.geometry(f"{ancho}x{alto}+{x}+{y}")
 
-    root.deiconify()    # 👈 mostrar ya centrada
+    # ================================
+    # TOPMOST 1 SEGUNDO (sin quedarse pegada)
+    # ================================
+    def _topmost_temporal():
+        try:
+            root.attributes("-topmost", True)
+            root.update()
+            root.after(1000, lambda: root.attributes("-topmost", False))
+        except Exception:
+            pass
+
+    root.deiconify()   # ✅ mostrar ya centrada
     root.lift()
     root.focus_force()
+    _topmost_temporal()
 
     # ================================
     # HEADER SUPERIOR
@@ -77,9 +104,7 @@ def iniciar_app():
     empresa_frame = tk.Frame(root, bg=COLOR_FONDO)
     empresa_frame.pack(pady=25)
 
-    base_dir = Path(__file__).resolve().parents[2]
-    logo_path = base_dir / "assets" / "logo.png"
-
+    # Reutilizamos logo_path ya calculado arriba
     logo_img = Image.open(logo_path)
     logo_img = logo_img.resize((60, 60))
     logo_tk = ImageTk.PhotoImage(logo_img)
@@ -123,15 +148,19 @@ def iniciar_app():
             command=comando
         )
 
+        # Hover (entra)
         def on_enter(e):
             btn.config(bg=color_hover, relief="raised", bd=3)
 
+        # Hover (sale)
         def on_leave(e):
             btn.config(bg=color_base, relief="raised", bd=2)
 
+        # Click presionado
         def on_press(e):
             btn.config(relief="sunken", bd=2)
 
+        # Click soltado
         def on_release(e):
             btn.config(relief="raised", bd=3)
 
