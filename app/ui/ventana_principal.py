@@ -13,7 +13,7 @@ def iniciar_app():
     root.withdraw()  # ✅ ocultar mientras se configura (evita “salto”)
 
     root.title("Control de Horas - V1")
-    root.geometry("520x520")
+    root.geometry("520x610")  # ✅ ALTURA igual al formulario
     root.resizable(False, False)
 
     # ================================
@@ -48,7 +48,7 @@ def iniciar_app():
     # ================================
     root.update_idletasks()
     ancho = 520
-    alto = 520
+    alto = 610  # ✅ ALTURA igual al formulario
     x = (root.winfo_screenwidth() // 2) - (ancho // 2)
     y = (root.winfo_screenheight() // 2) - (alto // 2)
     root.geometry(f"{ancho}x{alto}+{x}+{y}")
@@ -75,6 +75,7 @@ def iniciar_app():
     header = tk.Frame(root, bg=COLOR_VERDE, height=50)
     header.pack(fill="x")
 
+    # Título centrado
     lbl_titulo = tk.Label(
         header,
         text="CONTROL DE HORAS",
@@ -82,21 +83,23 @@ def iniciar_app():
         fg="white",
         font=("Segoe UI", 12, "bold")
     )
-    lbl_titulo.pack(side="left", padx=20)
+    lbl_titulo.place(relx=0.5, rely=0.5, anchor="center")
 
+    # Hora a la derecha en negrita
     lbl_hora = tk.Label(
         header,
         bg=COLOR_VERDE,
         fg="white",
-        font=("Segoe UI", 10)
+        font=("Segoe UI", 10, "bold")  # ✅ negrita
     )
-    lbl_hora.pack(side="right", padx=20)
+    lbl_hora.place(relx=1.0, rely=0.5, anchor="e", x=-20)
 
     def actualizar_hora():
         lbl_hora.config(text=datetime.now().strftime("%I:%M:%S %p"))
         root.after(1000, actualizar_hora)
 
     actualizar_hora()
+
 
     # ================================
     # SECCIÓN LOGO + EMPRESA
@@ -139,7 +142,7 @@ def iniciar_app():
             height=2,
             bg=color_base,
             fg="white",
-            font=("Segoe UI", 10, "bold"),
+            font=("Segoe UI", 11, "bold"),  # ✅ TEXTO un poco más grande
             relief="raised",
             bd=2,
             cursor="hand2",
