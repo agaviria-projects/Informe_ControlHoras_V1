@@ -103,11 +103,12 @@ def exportar_a_excel(parent):
             f"Excel generado como tabla estructurada:\n{out}",
             parent=parent
         )
-
+        return out 
     except Exception as e:
         messagebox.showerror(
             "Error",
             f"Ocurrió un error:\n{e}",
             parent=parent
         )
+        return None
 
