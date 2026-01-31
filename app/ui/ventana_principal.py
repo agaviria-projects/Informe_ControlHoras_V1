@@ -117,7 +117,7 @@ def iniciar_app():
         empresa_frame,
         text="ELITE Ingenieros S.A.S.",
         bg=COLOR_FONDO,
-        fg="#0d3b2e",
+        fg="#000403",
         font=("Segoe UI", 14, "bold")
     )
     lbl_empresa.pack(side="left")

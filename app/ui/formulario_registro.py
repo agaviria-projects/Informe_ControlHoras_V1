@@ -26,7 +26,6 @@ def abrir_formulario_registro(parent):
 
     ventana.deiconify()              # ③ mostrar SIN parpadeo
 
-
     COLOR_VERDE = "#1f7a4d"
     COLOR_FONDO = "#f2f2f2"
     ventana.configure(bg=COLOR_FONDO)
@@ -63,7 +62,23 @@ def abrir_formulario_registro(parent):
 
     entries = []
 
-    def campo(label, fila):
+    # ============================================================
+    # NUEVO: variables para forzar MAYÚSCULAS mientras escribe
+    # ============================================================
+    var_nombre = tk.StringVar()
+    var_placa = tk.StringVar()
+
+    def _forzar_mayusculas(var: tk.StringVar):
+        v = var.get()
+        up = v.upper()
+        if v != up:
+            var.set(up)
+
+    # Cuando cambie el texto, lo convertimos a mayúsculas
+    var_nombre.trace_add("write", lambda *args: _forzar_mayusculas(var_nombre))
+    var_placa.trace_add("write", lambda *args: _forzar_mayusculas(var_placa))
+
+    def campo(label, fila, textvariable=None):
         tk.Label(
             form_frame,
             text=label,
@@ -72,14 +87,14 @@ def abrir_formulario_registro(parent):
             font=("Segoe UI", 9, "bold")
         ).grid(row=fila, column=0, sticky="w", pady=6)
 
-        entry = tk.Entry(form_frame, width=30)
+        entry = tk.Entry(form_frame, width=30, textvariable=textvariable)
         entry.grid(row=fila, column=1, pady=6)
         entries.append(entry)
         return entry
 
     entry_cedula = campo("Cédula", 0)
-    entry_nombre = campo("Nombre", 1)
-    entry_placa = campo("Placa", 2)
+    entry_nombre = campo("Nombre", 1, textvariable=var_nombre)  # ✅ ahora fuerza mayúsculas
+    entry_placa = campo("Placa", 2, textvariable=var_placa)     # ✅ ahora fuerza mayúsculas
     entry_fecha = campo("Fecha (YYYY-MM-DD)", 3)
     entry_km = campo("Kilómetros", 4)
     entry_horas = campo("Horas trabajadas", 5)
@@ -124,8 +139,8 @@ def abrir_formulario_registro(parent):
 
             data = {
                 "cedula": entry_cedula.get().strip(),
-                "nombre": entry_nombre.get().strip().upper(),
-                "placa": entry_placa.get().strip().upper(),
+                "nombre": entry_nombre.get().strip().upper(),  # se mantiene
+                "placa": entry_placa.get().strip().upper(),    # se mantiene
                 "fecha": entry_fecha.get().strip(),
                 "kilometro": float(entry_km.get()) if entry_km.get() else None,
                 "horas_trabajadas": float(entry_horas.get()) if entry_horas.get() else None,
