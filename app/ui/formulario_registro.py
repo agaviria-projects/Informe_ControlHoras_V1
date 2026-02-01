@@ -2,6 +2,9 @@ import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
 from datetime import datetime
+from app.ui.utils_icono import aplicar_icono
+
+
 
 from app.data.repository import crear_registro
 from app.ui.widgets.calendario_selector import seleccionar_fecha, FESTIVOS
@@ -11,6 +14,7 @@ def abrir_formulario_registro(parent):
     parent.withdraw()
 
     ventana = tk.Toplevel(parent)
+    aplicar_icono(ventana)
     ventana.withdraw()
     ventana.title("Nuevo Registro - Control de Horas")
     ventana.geometry("520x610")
@@ -21,7 +25,10 @@ def abrir_formulario_registro(parent):
     ancho = 520
     alto = 610
     x = (ventana.winfo_screenwidth() // 2) - (ancho // 2)
-    y = (ventana.winfo_screenheight() // 2) - (alto // 2)
+    y = (ventana.winfo_screenheight() // 2) - (alto // 2)-50
+    # Evitar que se vaya fuera de pantalla arriba
+    if y < 0:
+        y = 0
     ventana.geometry(f"{ancho}x{alto}+{x}+{y}")
     ventana.deiconify()
 

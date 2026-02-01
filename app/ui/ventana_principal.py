@@ -4,6 +4,7 @@ from tkinter import messagebox
 from pathlib import Path
 from PIL import Image, ImageTk
 from datetime import datetime
+from app.ui.utils_icono import aplicar_icono
 
 from app.ui.formulario_registro import abrir_formulario_registro
 from app.ui.buscar_editar import abrir_buscar_editar
@@ -12,6 +13,15 @@ from app.ui.exportar_excel import exportar_a_excel
 
 def iniciar_app():
     root = tk.Tk()
+    aplicar_icono(root)
+    # Forzar que Windows “pinte” el icono de una vez
+    try:
+        root.update_idletasks()
+        root.after(50, root.iconify)         # minimiza
+        root.after(100, root.deiconify)      # restaura
+        root.after(150, root.lift)           # trae al frente
+    except Exception:
+        pass
     root.withdraw()  # ✅ ocultar mientras se configura (evita “salto”)
 
     root.title("Control de Horas - V1")
@@ -58,7 +68,9 @@ def iniciar_app():
     ancho = 520
     alto = 610
     x = (root.winfo_screenwidth() // 2) - (ancho // 2)
-    y = (root.winfo_screenheight() // 2) - (alto // 2)
+    y = (root.winfo_screenheight() // 2) - (alto // 2)-60
+    if y < 0:
+        y = 0
     root.geometry(f"{ancho}x{alto}+{x}+{y}")
 
     # ================================
@@ -100,11 +112,16 @@ def iniciar_app():
     )
     lbl_hora.place(relx=1.0, rely=0.5, anchor="e", x=-20)
 
+    hora_job = None
+
     def actualizar_hora():
+        global hora_job
         lbl_hora.config(text=datetime.now().strftime("%I:%M:%S %p"))
-        root.after(1000, actualizar_hora)
+        # guarda el ID del after para poder cancelarlo al salir
+        hora_job = root.after(1000, actualizar_hora)
 
     actualizar_hora()
+
 
     # ================================
     # LOGO + EMPRESA
@@ -258,7 +275,19 @@ def iniciar_app():
     placeholder_icon(menu).grid(row=3, column=1, pady=6, sticky="w")
 
     # --- Fila 4 (Salir)
-    b4 = crear_boton_grande(menu, "Salir", root.quit, COLOR_SALIR, COLOR_SALIR_HOVER)
+    def salir():
+        try:
+            # cancelar reloj si está activo
+            if hora_job is not None:
+                root.after_cancel(hora_job)
+        except Exception:
+            pass
+        try:
+            root.destroy()   # cierra todo de una vez
+        except Exception:
+            root.quit()
+
+    b4 = crear_boton_grande(menu, "Salir", salir, COLOR_SALIR, COLOR_SALIR_HOVER)
     b4.grid(row=4, column=0, pady=(20, 0), padx=(0, 10), sticky="w")
     placeholder_icon(menu).grid(row=4, column=1, pady=(20, 0), sticky="w")
 

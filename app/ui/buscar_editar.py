@@ -23,7 +23,9 @@ def abrir_buscar_editar(parent):
     ancho = 1300
     alto = 550
     x = (ventana.winfo_screenwidth() // 2) - (ancho // 2)
-    y = (ventana.winfo_screenheight() // 2) - (alto // 2)
+    y = (ventana.winfo_screenheight() // 2) - (alto // 2)-80
+    if y < 0:
+     y = 0
     ventana.geometry(f"{ancho}x{alto}+{x}+{y}")
 
     ventana.deiconify()
