@@ -1,5 +1,10 @@
 import os
 import tkinter as tk
+import subprocess
+import threading
+import webbrowser
+import sys
+import time
 from tkinter import messagebox
 from pathlib import Path
 from PIL import Image, ImageTk
@@ -153,6 +158,44 @@ def iniciar_app():
     def info(msg):
         messagebox.showinfo("Información", msg)
 
+    def abrir_dashboard_streamlit():
+        try:
+            # raíz del proyecto
+            project_dir = Path(__file__).resolve().parents[2]
+
+            # tools/dashboard_app.py
+            dashboard_script = project_dir / "tools" / "dashboard_app.py"
+
+            if not dashboard_script.exists():
+                messagebox.showerror(
+                    "Dashboard",
+                    f"No se encontró el archivo:\n{dashboard_script}\n\nCrea tools/dashboard_app.py",
+                    parent=root
+                )
+                return
+
+            def _run():
+                # Levanta Streamlit en puerto fijo
+                subprocess.Popen(
+                    [
+                        sys.executable, "-m", "streamlit", "run", str(dashboard_script),
+                        "--server.port", "8501",
+                        "--server.headless", "true"
+                    ],
+                    cwd=str(project_dir),
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+
+                # Abre navegador
+                time.sleep(1.2)
+                webbrowser.open("http://localhost:8501")
+
+            threading.Thread(target=_run, daemon=True).start()
+
+        except Exception as ex:
+            messagebox.showerror("Dashboard", f"No se pudo abrir el dashboard:\n{ex}", parent=root)
+
     def abrir_excel_o_carpeta():
         try:
             reports_dir.mkdir(exist_ok=True)
@@ -270,7 +313,7 @@ def iniciar_app():
     btn_icon.grid(row=2, column=1, pady=6, sticky="w")
 
     # --- Fila 3
-    b3 = crear_boton_grande(menu, "Ver Dashboard", lambda: info("Dashboard (Paso 13)"), COLOR_BOTON, COLOR_BOTON_HOVER)
+    b3 = crear_boton_grande(menu, "Ver Dashboard", abrir_dashboard_streamlit, COLOR_BOTON, COLOR_BOTON_HOVER)
     b3.grid(row=3, column=0, pady=6, padx=(0, 10), sticky="w")
     placeholder_icon(menu).grid(row=3, column=1, pady=6, sticky="w")
 
