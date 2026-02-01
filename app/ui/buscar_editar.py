@@ -75,9 +75,13 @@ def abrir_buscar_editar(parent):
     entry_placa = tk.Entry(filtros, width=12)
     entry_placa.grid(row=0, column=5, padx=(6, 14), pady=4)
 
+    tk.Label(filtros, text="Zona:", bg=COLOR_FONDO, font=("Segoe UI", 9, "bold")).grid(row=0, column=6, sticky="w")
+    entry_zona = tk.Entry(filtros, width=18)
+    entry_zona.grid(row=0, column=7, padx=(6, 14), pady=4)
+
     lbl_total = tk.Label(filtros, text="Total: 0", bg=COLOR_FONDO, fg="#0d3b2e", font=("Segoe UI", 9, "bold"))
-    lbl_total.grid(row=0, column=6, sticky="e", padx=(10, 0))
-    filtros.grid_columnconfigure(6, weight=1)
+    lbl_total.grid(row=0, column=8, sticky="e", padx=(10, 0))
+    filtros.grid_columnconfigure(8, weight=1)
 
     grid_frame = tk.Frame(ventana, bg=COLOR_FONDO)
     grid_frame.pack(fill="both", expand=True, padx=14, pady=10)
@@ -126,22 +130,37 @@ def abrir_buscar_editar(parent):
         cedula = entry_cedula.get().strip() or None
         nombre = entry_nombre.get().strip() or None
         placa = entry_placa.get().strip() or None
+        zona = entry_zona.get().strip() or None
 
-        rows = buscar_registros(cedula=cedula, nombre=nombre, placa=placa)
+        rows = buscar_registros(cedula=cedula, nombre=nombre, placa=placa,zona=zona)
 
         count = 0
         for r in rows:
             r = list(r)
-            base = (r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], r[9])
+
+            base = (
+                r[0],   # id
+                r[1],   # cedula
+                r[2],   # nombre
+                r[3],   # placa
+                r[11],  # zona  ✅ (al final)
+                r[4],   # fecha ✅
+                r[5],   # kilometro
+                r[6],   # horas_trabajadas
+                r[7],   # valor_hora_extra
+                r[8],   # created_at
+            )
+
             tree.insert("", "end", values=base)
             count += 1
-
+            
         lbl_total.config(text=f"Total: {count}")
 
     def limpiar_filtros():
         entry_cedula.delete(0, tk.END)
         entry_nombre.delete(0, tk.END)
         entry_placa.delete(0, tk.END)
+        entry_zona.delete(0, tk.END)
         cargar_datos()
 
     def eliminar_desde_fila():
@@ -302,6 +321,7 @@ def abrir_buscar_editar(parent):
     entry_cedula.bind("<Return>", lambda e: cargar_datos())
     entry_nombre.bind("<Return>", lambda e: cargar_datos())
     entry_placa.bind("<Return>", lambda e: cargar_datos())
+    entry_zona.bind("<Return>", lambda e: cargar_datos())
 
     try:
         cargar_datos()
