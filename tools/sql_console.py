@@ -60,8 +60,8 @@ def imprimir_resultados(cursor, rows):
             # limitar a 19 chars: YYYY-MM-DD HH:MM:SS
             s = s[:19]
 
-        # Evitar columnas kilométricas si algo se alarga
-        if len(s) > 40:
+        # Evitar columnas kilométricas si algo se alarga (excepto 'file')
+        if col_name != "file" and len(s) > 40:
             s = s[:37] + "..."
 
         return s
