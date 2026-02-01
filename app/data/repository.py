@@ -14,17 +14,19 @@ def crear_registro(data: dict):
             cedula,
             nombre,
             placa,
+            zona,
             fecha,
             kilometro,
             horas_trabajadas,
             valor_hora_extra,
             created_at,
             deleted
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
     """, (
         data["cedula"],
         data["nombre"],
         data["placa"],
+        data.get("zona"),
         data["fecha"],
         data.get("kilometro"),
         data.get("horas_trabajadas"),
@@ -43,7 +45,22 @@ def buscar_registros(cedula=None, nombre=None, placa=None):
     conn = get_connection()
     cursor = conn.cursor()
 
-    query = "SELECT * FROM registros WHERE deleted = 0"
+    query = """
+    SELECT
+        id,
+        cedula,
+        nombre,
+        placa,
+        zona,
+        fecha,
+        kilometro,
+        horas_trabajadas,
+        valor_hora_extra,
+        created_at
+    FROM registros
+    WHERE deleted = 0
+    """
+
     params = []
 
     if cedula:
@@ -78,6 +95,7 @@ def actualizar_registro(id_registro: int, data: dict):
             cedula = ?,
             nombre = ?,
             placa = ?,
+            zona=?,
             fecha = ?,
             kilometro = ?,
             horas_trabajadas = ?,
@@ -88,6 +106,7 @@ def actualizar_registro(id_registro: int, data: dict):
         data["cedula"],
         data["nombre"],
         data["placa"],
+        data.get("zona"),
         data["fecha"],
         data.get("kilometro"),
         data.get("horas_trabajadas"),

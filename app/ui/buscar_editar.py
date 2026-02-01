@@ -83,7 +83,7 @@ def abrir_buscar_editar(parent):
     grid_frame.pack(fill="both", expand=True, padx=14, pady=10)
 
     columnas = (
-        "id", "cedula", "nombre", "placa", "fecha",
+        "id", "cedula", "nombre", "placa","zona", "fecha",
         "kilometro", "horas_trabajadas", "valor_hora_extra", "created_at"
     )
 
@@ -98,6 +98,7 @@ def abrir_buscar_editar(parent):
     tree.heading("cedula", text="Cédula")
     tree.heading("nombre", text="Nombre")
     tree.heading("placa", text="Placa")
+    tree.heading("zona", text="Zona")
     tree.heading("fecha", text="Fecha")
     tree.heading("kilometro", text="KM")
     tree.heading("horas_trabajadas", text="Horas")
@@ -108,6 +109,7 @@ def abrir_buscar_editar(parent):
     tree.column("cedula", width=110, anchor="w")
     tree.column("nombre", width=220, anchor="w")
     tree.column("placa", width=80, anchor="center")
+    tree.column("zona", width=170, anchor="center")
     tree.column("fecha", width=110, anchor="center")
     tree.column("kilometro", width=80, anchor="e")
     tree.column("horas_trabajadas", width=90, anchor="e")
@@ -130,7 +132,7 @@ def abrir_buscar_editar(parent):
         count = 0
         for r in rows:
             r = list(r)
-            base = r[:9]
+            base = (r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], r[9])
             tree.insert("", "end", values=base)
             count += 1
 
@@ -202,12 +204,13 @@ def abrir_buscar_editar(parent):
         e_ced = fila("Cédula", vals[1], 0)
         e_nom = fila("Nombre", vals[2], 1)
         e_pla = fila("Placa", vals[3], 2)
-        e_fec = fila("Fecha (YYYY-MM-DD)", vals[4], 3)
-        e_km  = fila("Kilómetros", vals[5], 4)
-        e_hor = fila("Horas trabajadas", vals[6], 5)
-        e_val = fila("Valor hora extra", vals[7], 6)
+        e_zon = fila("Zona", vals[4], 3)
+        e_fec = fila("Fecha (YYYY-MM-DD)", vals[5], 4)
+        e_km  = fila("Kilómetros", vals[6], 5)
+        e_hor = fila("Horas trabajadas", vals[7], 6)
+        e_val = fila("Valor hora extra", vals[8], 7)
 
-        entries = [e_ced, e_nom, e_pla, e_fec, e_km, e_hor, e_val]
+        entries = [e_ced, e_nom, e_pla,e_zon, e_fec, e_km, e_hor, e_val]
 
         def focus_sig(event, idx):
             try:
@@ -226,6 +229,8 @@ def abrir_buscar_editar(parent):
                     raise ValueError("El nombre es obligatorio.")
                 if not e_pla.get().strip():
                     raise ValueError("La placa es obligatoria.")
+                if not e_zon.get().strip():
+                    raise ValueError("La zona es obligatoria.")
 
                 datetime.strptime(e_fec.get().strip(), "%Y-%m-%d")
 
@@ -233,6 +238,7 @@ def abrir_buscar_editar(parent):
                     "cedula": e_ced.get().strip(),
                     "nombre": e_nom.get().strip().upper(),
                     "placa": e_pla.get().strip().upper(),
+                    "zona": e_zon.get().strip(),
                     "fecha": e_fec.get().strip(),
                     "kilometro": float(e_km.get()) if e_km.get().strip() else None,
                     "horas_trabajadas": float(e_hor.get()) if e_hor.get().strip() else None,
